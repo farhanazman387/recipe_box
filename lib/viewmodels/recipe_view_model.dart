@@ -72,4 +72,8 @@ class RecipeViewModel extends ChangeNotifier {
     await _recipeRepository.deleteRecipe(id);
     await loadData();
   }
+
+  Future<List<RecipeType>> loadRecipeTypes() {
+    return _recipeTypeService.loadRecipeTypes();
+  }
 }

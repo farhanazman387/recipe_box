@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../models/recipe.dart';
+import '../models/recipe_type.dart';
 import '../viewmodels/recipe_view_model.dart';
 
 class RecipeFormPage extends StatefulWidget {
@@ -30,10 +31,13 @@ class _RecipeFormPageState extends State<RecipeFormPage> {
 
   int? _selectedRecipeTypeId;
   String? _imagePath;
+  late Future<List<RecipeType>> _recipeTypesFuture;
 
   @override
   void initState() {
     super.initState();
+
+    _recipeTypesFuture = context.read<RecipeViewModel>().loadRecipeTypes();
 
     final recipe = widget.recipe;
 
@@ -118,8 +122,6 @@ class _RecipeFormPageState extends State<RecipeFormPage> {
 
   @override
   Widget build(BuildContext context) {
-    final recipeTypes = context.watch<RecipeViewModel>().recipeTypes;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -146,31 +148,50 @@ class _RecipeFormPageState extends State<RecipeFormPage> {
               },
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<int>(
-              value: _selectedRecipeTypeId,
-              decoration: const InputDecoration(
-                labelText: 'Recipe Type',
-                border: OutlineInputBorder(),
-              ),
-              items: recipeTypes
-                  .map(
-                    (type) => DropdownMenuItem<int>(
-                      value: type.id,
-                      child: Text(type.name),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedRecipeTypeId = value;
-                });
-              },
-              validator: (value) {
-                if (value == null) {
-                  return 'Please select a recipe type.';
+            FutureBuilder<List<RecipeType>>(
+              future: _recipeTypesFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
                 }
 
-                return null;
+                if (snapshot.hasError) {
+                  return const Text(
+                    'Unable to load recipe types.',
+                  );
+                }
+
+                final recipeTypes = snapshot.data ?? [];
+
+                return DropdownButtonFormField<int>(
+                  value: _selectedRecipeTypeId,
+                  decoration: const InputDecoration(
+                    labelText: 'Recipe Type',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: recipeTypes
+                      .map(
+                        (type) => DropdownMenuItem<int>(
+                          value: type.id,
+                          child: Text(type.name),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedRecipeTypeId = value;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null) {
+                      return 'Please select a recipe type.';
+                    }
+
+                    return null;
+                  },
+                );
               },
             ),
             const SizedBox(height: 16),
